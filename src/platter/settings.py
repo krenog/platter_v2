@@ -13,8 +13,10 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from datetime import datetime, timedelta
+from distutils.util import strtobool
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
@@ -25,9 +27,8 @@ SECRET_KEY = '0_b*p-xpd36vs5)(ap6$3w9z!x447#y)6%b&r64)p_es2y9$#n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = ['*']
+APPEND_SLASH = True
 # Application definition
 
 INSTALLED_APPS = [
@@ -37,19 +38,26 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
+    'users',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'logger.store_request.StoreRequestMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'platter.urls'
+
+CORS_ORIGIN_ALLOW_ALL = True
 
 TEMPLATES = [
     {
@@ -69,20 +77,78 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'platter.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': os.getenv('POSTGRES_DB', 'platter'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'sam007'),
+        'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'CONN_MAX_AGE': 60 * 10,
     }
 }
 
+# Cache
+redis_host = os.getenv('REDIS_HOST', 'localhost')
+redis_port = os.getenv('REDIS_PORT', '6379')
+redis_db = os.getenv('REDIS_DB', 0)
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{redis_host}:{redis_port}/{redis_db}',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+        'KEY_PREFIX': 'platter',
+    }
+}
+
+AUTH_USER_MODEL = 'user.User'
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -100,12 +166,23 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+SMSTRAFFIC_URL = os.getenv('SMSTRAFFIC_URL', 'https://smsc.ru/sys/send.php')
+SMSTRAFFIC_LOGIN = os.getenv('SMSTRAFFIC_LOGIN', 'krenog')
+SMSTRAFFIC_PASSWORD = os.getenv('SMSTRAFFIC_PASSWORD', 'aseaf19450')
+SMSTRAFFIC_ORIGINATOR = os.getenv('SMSTRAFFIC_ORIGINATOR', 'Platter')
+SMSTRAFFIC_TIMEOUT_SECONDS = int(os.getenv('SMSTRAFFIC_TIMEOUT_SECONDS', 50))
+SMSTRAFFIC_CONNECTION_POOL_SIZE = int(os.getenv('SMSTRAFFIC_CONNECTION_POOL_SIZE', 50))
+
+SMS_GATEWAY_ENABLED = bool(strtobool(os.getenv('SMS_GATEWAY_ENABLED', 'False')))
+SMS_TEST_PHONE_NUMBER = os.getenv('SMS_TEST_PHONE_NUMBER', '9885918318')
+SMS_TEST_SMS_CODE = int(os.getenv('SMS_TEST_SMS_CODE', 111111))
+LENGTH_SMS_CODE = os.getenv('LENGTH_SMS_CODE', 6)
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -113,8 +190,76 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
+PATH_FILE_LOGS = os.getenv('PATH_FILE_LOGS', 'logs/debug.log')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console'],
+    },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s '
+                      '%(process)d %(thread)d %(message)s'
+        },
+        'platter_format': {
+            'format': '[%(levelname)-8s] %(asctime)-15s %(module)s:%(funcName)s USER:%(user)s IP:%(client_ip)s %(message)s'
+        },
+
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'platter_handler': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'platter_format'
+        },
+        'file': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': PATH_FILE_LOGS,
+            'backupCount': 20,
+            'interval': 1,
+            'formatter': 'platter_format',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+        },
+        'django': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+        'services': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+        },
+        'platter': {
+            'level': 'DEBUG',
+            'handlers': ['platter_handler', 'file'],
+        },
+
+    }
+}
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/2.2/howto/static-files/
+
 STATIC_URL = '/static/'
+STATIC_ROOT = '/var/www/static'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/var/www/media'
