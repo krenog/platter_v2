@@ -85,8 +85,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': os.getenv('POSTGRES_DB', 'platter'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'sam007'),
-        'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
         'CONN_MAX_AGE': 60 * 10,
     }
@@ -109,11 +109,12 @@ CACHES = {
     }
 }
 
-AUTH_USER_MODEL = 'user.User'
+AUTH_USER_MODEL = 'users.User'
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'errors.handler.custom_exception_handler',
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
@@ -165,7 +166,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 SMSTRAFFIC_URL = os.getenv('SMSTRAFFIC_URL', 'https://smsc.ru/sys/send.php')
 SMSTRAFFIC_LOGIN = os.getenv('SMSTRAFFIC_LOGIN', 'krenog')
 SMSTRAFFIC_PASSWORD = os.getenv('SMSTRAFFIC_PASSWORD', 'aseaf19450')
@@ -173,9 +173,10 @@ SMSTRAFFIC_ORIGINATOR = os.getenv('SMSTRAFFIC_ORIGINATOR', 'Platter')
 SMSTRAFFIC_TIMEOUT_SECONDS = int(os.getenv('SMSTRAFFIC_TIMEOUT_SECONDS', 50))
 SMSTRAFFIC_CONNECTION_POOL_SIZE = int(os.getenv('SMSTRAFFIC_CONNECTION_POOL_SIZE', 50))
 
-SMS_GATEWAY_ENABLED = bool(strtobool(os.getenv('SMS_GATEWAY_ENABLED', 'False')))
-SMS_TEST_PHONE_NUMBER = os.getenv('SMS_TEST_PHONE_NUMBER', '9885918318')
+SMS_GATEWAY_ENABLED = bool(strtobool(os.getenv('SMS_GATEWAY_ENABLED', 'True')))
+SMS_TEST_PHONE_NUMBER = os.getenv('SMS_TEST_PHONE_NUMBER', '9885918317')
 SMS_TEST_SMS_CODE = int(os.getenv('SMS_TEST_SMS_CODE', 111111))
+SMS_CODE_TTL = int(os.getenv('SMS_CODE_TTL', 600))  # seconds
 LENGTH_SMS_CODE = os.getenv('LENGTH_SMS_CODE', 6)
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/

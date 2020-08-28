@@ -10,6 +10,8 @@ class SendSMSCodeSchema(Schema):
 class UserSchema(Schema):
     id = fields.Int(dump_only=True)
     phone_number = PhoneNumberField(required=True)
+    token = fields.Str(required=True)
+    refresh_token = fields.Str(required=True)
 
 
 class SignInSchema(Schema):
@@ -19,6 +21,3 @@ class SignInSchema(Schema):
 
 class PushSchema(Schema):
     push_token = fields.Str(required=True)
-
-
-SendSMSCodeSchema().validate()

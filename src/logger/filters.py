@@ -22,7 +22,7 @@ class AddDjangoRequestFilter(logging.Filter):  # pylint: disable=too-few-public-
         request = get_request()
 
         if request is not None:
-            record.user = request.phone_number
+            record.user = request.user
             record.client_ip = get_client_ip(request)
 
         return True

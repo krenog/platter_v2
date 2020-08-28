@@ -1,0 +1,27 @@
+version: "3.6"
+
+x-defaults: &defaults
+  env_file:
+    - ./env/sample/local.env
+  restart: always
+  logging:
+    options:
+      max-size: '30m'
+      max-file: '10'
+    driver: json-file
+
+services:
+  db:
+    <<: *defaults
+    image: postgres:10
+    ports:
+      - '5432:5432'
+
+  redis:
+    <<: *defaults
+    image: redis:5.0-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - ./.docker-data/redis:/data
+    ports:
+      - '6379:6379'

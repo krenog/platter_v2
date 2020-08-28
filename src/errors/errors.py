@@ -10,3 +10,12 @@ class ThirdPartyAPIError(APIException):
 
     def __init__(self, detail=None, code=None):
         super().__init__(detail, code)
+
+
+class ClientError(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_detail = _('Server Error')
+    default_code = 'server_error'
+
+    def __init__(self, detail=None, code=None):
+        super().__init__(detail, code)
