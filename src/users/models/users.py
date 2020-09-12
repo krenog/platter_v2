@@ -1,23 +1,9 @@
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
-from django.utils import timezone
 
 
 # Create your models here.
-
-
-class UserType(models.Model):
-    type_name = models.CharField(max_length=64)
-
-    class Meta:
-        verbose_name = 'тип пользователя'
-        verbose_name_plural = 'Типы пользователей'
-
-    def __str__(self):
-        return self.type_name
-
-
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -41,13 +27,13 @@ class UserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields) -> 'User':
         return self._create_user(phone_number, password, **extra_fields)
 
-    def get_or_create_user(self, phone_number: str, **extra_fields) -> 'User':
+    def get_or_create_user(self, phone_number: str, **extra_fields) -> ('User', bool):
         try:
             user = self.get(phone_number=phone_number)
+            return user, False
         except self.model.DoesNotExist:
             user = self.create_user(phone_number, **extra_fields)
-
-        return user
+            return user, True
 
     def create_staffuser(self, phone_number, password):
         user = self.create_user(
@@ -90,9 +76,9 @@ class User(AbstractBaseUser, PermissionsMixin):
                                         verbose_name="Запись создана")
     phone_number = models.CharField(max_length=10, unique=True)
     user_type = models.IntegerField(choices=USER_TYPES, null=False, blank=False, default=USER,
-                                    verbose_name="Электронная почта")
+                                    verbose_name="Тип пользователя")
     email = models.EmailField(null=True, blank=True, verbose_name="Электронная почта")
-    sex = models.IntegerField(choices=SEX_CHOICES, null=False, blank=False, default=Unknown)
+    gender = models.IntegerField(choices=SEX_CHOICES, null=False, blank=False, default=Unknown)
     birth = models.DateField(null=True, blank=True,
                              verbose_name="Дата рождения")
     first_name = models.CharField(max_length=100, null=False, blank=False, verbose_name='Имя')

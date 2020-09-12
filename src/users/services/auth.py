@@ -2,13 +2,17 @@ from collections import namedtuple
 
 from django.conf import settings
 from django.core.cache import cache
-from rest_framework_simplejwt.tokens import RefreshToken, Token
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from errors.errors import ClientError
 from services.sms.api import send_sms
 from users.models import verification_code, User
 
-SignInResponseData = namedtuple('SignInResponseData', 'id, phone_number, token, refresh_token')
+SignInResponseData = namedtuple('SignInResponseData',
+                                'id, phone_number, token, refresh_token, new_user,email,gender,birth,first_name,'
+                                'last_name')
+RefreshTokenData = namedtuple('RefreshTokenData',
+                              'token, refresh_token')
 
 
 def generate_and_send_code(phone_number: str) -> None:
@@ -22,14 +26,33 @@ def generate_and_send_code(phone_number: str) -> None:
         send_sms(phone_number=phone_number, text=str(code))
 
 
-def sign_in(phone_number: str, code: str) -> SignInResponseData:
-    validate_code(phone_number, code)
-    user = User.objects.get_or_create_user(phone_number=phone_number)
-    delete_code_from_cache(phone_number)
-    refresh = get_tokens_for_user(user)
+def convert_user_data(user: User, refresh: RefreshToken, new_user: bool) -> SignInResponseData:
     return SignInResponseData(
         id=user.id,
-        phone_number=phone_number,
+        phone_number=user.phone_number,
+        email=user.email,
+        gender=user.gender,
+        birth=user.birth,
+        token=str(refresh.access_token),
+        refresh_token=str(refresh),
+        new_user=new_user,
+        first_name=user.first_name,
+        last_name=user.last_name
+    )
+
+
+def sign_in(phone_number: str, code: str) -> SignInResponseData:
+    validate_code(phone_number, code)
+    user, created = User.objects.get_or_create_user(phone_number=phone_number)
+    delete_code_from_cache(phone_number)
+    refresh = get_tokens_for_user(user)
+    data = convert_user_data(user, refresh, created)
+    return data
+
+
+def generate_new_token(refresh_token: str) -> RefreshTokenData:
+    refresh = RefreshToken(refresh_token)
+    return RefreshTokenData(
         token=str(refresh.access_token),
         refresh_token=str(refresh)
     )

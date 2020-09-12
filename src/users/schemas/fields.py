@@ -1,4 +1,7 @@
-from marshmallow import fields, validate
+from datetime import datetime
+
+from marshmallow import fields, validate, utils
+from marshmallow.fields import Field
 
 
 class PhoneNumberField(fields.String):
@@ -9,5 +12,6 @@ class PhoneNumberField(fields.String):
 
 class EmailField(fields.String):
     def __init__(self, *args, **kwargs):
-        kwargs['validate'] = validate.Regexp(r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)', error='Указан невалидный почтовый адрес')
+        kwargs['validate'] = validate.Regexp(r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)',
+                                             error='Указан невалидный почтовый адрес')
         super().__init__(*args, **kwargs)
